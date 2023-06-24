@@ -115,19 +115,22 @@ def image2sound(file: str, path: list) -> tuple:
     writeFreq(freq, SAMPLERATE)
     return freq
 
-
-if not os.path.exists("image2sound") or os.path.isfile("image2sound"):
-    try:
-        os.system("rm -rf image2sound")
-    except:
-        pass
-    os.system("mkdir image2sound")
-if not os.path.exists(f"image2sound/path{SIZE}.json"):
+def remakePath():
+    if not os.path.exists("image2sound") or os.path.isfile("image2sound"):
+        try:
+            os.system("rm -rf image2sound")
+        except:
+            pass
+        os.system("mkdir image2sound")
     print(
         f"Calculating Hilbert's Curve for p={SIZE}, n=2 with all threads. Note: this may take a while, especially for lower end devices, but you should only see this once per size."
     )
     path = makePath()
     json.dump(path, open(f"image2sound/path{SIZE}.json", "w"))
+    return path
+
+if not os.path.exists(f"image2sound/path{SIZE}.json"):
+    path = remakePath()
 else:
     path = json.load(open(f"image2sound/path{SIZE}.json", "r"))
 
