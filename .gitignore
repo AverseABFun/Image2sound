@@ -14,9 +14,12 @@
 !test/*.webp
 !test/*.mp4
 
-# The replit test files which aren't really neccessary
+# The replit files which aren't really neccessary
 .replit
 replit.nix
+
+# Breakpoints don't need to be shared
+.breakpoints
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
