@@ -11,6 +11,7 @@ import moviepy
 import moviepy.editor
 import moviepy.video.fx.resize
 import threading
+import time
 
 SIZE = 256  # The size used in pixels
 SAMPLERATE = 44100 # The sample rate used in the output audio
@@ -52,10 +53,11 @@ def convertPixelsToFrequencies(pixels: list) -> list:
         realPixel = pixel[:3]
         brightness = sum(realPixel) / 3
         decibals = brightness * (60 / 255)
-        color = 0
+        color = ""
         for num in realPixel:
-            color += num
-        hertz = color * ((16000 - 25) / (765)) + 25
+            color += str(num)
+        color = int(color)
+        hertz = (color * ((16000 - 25) / (255255255))) + 25
         freqs.append((hertz, decibals))
     return freqs
 
@@ -87,28 +89,36 @@ def writeFreqs(freqs: list, samplerate: int) -> None:
         sines += list(makeSine(freq, samplerate, LENGTH))
     write("freq.wav", samplerate, np.array(sines).astype(np.int16))
 
-def video2sound(file: str, path: list) -> list:
+def video2sound(file: str, path: list, useFile=False) -> list:
     video = moviepy.editor.VideoFileClip(file)
     print("Resizing video")
     video = resizeVideo(video, SIZE)
     print(f"Getting images from video after converting video to {1/LENGTH} FPS")
     images = getImagesFromVideo(video)
     print("Looping through images and creating the frequencies for each")
-    def threadFunc(image):
+    def threadFunc(image, place):
         pixels = getPixels(image, path)
         freqs = convertPixelsToFrequencies(pixels)
         freq = makeFreqFromFreqs(freqs)
-        freqss.append(freq)
+        freqss[place] = freq
     freqss = []
     for image in images:
-        thread = threading.Thread(target=threadFunc,args=(image))
+        freqss.append([])
+        thread = threading.Thread(target=threadFunc,args=(image,len(freqss)-1))
         thread.start()
-        thread.run()
-    print("Combining frequencies together and writing to freq.wav")
-    writeFreqs(freqss, SAMPLERATE)
-    return freqss
+        #thread.run()
+    time.sleep(4)
+    if useFile:
+        print("Combining frequencies together and writing to freq.wav")
+        writeFreqs(freqss, SAMPLERATE)
+    else:
+        print("Combining frequencies together and returning")
+    sines = []
+    for freq in freqss:
+        sines += list(makeSine(freq, SAMPLERATE, LENGTH))
+    return np.array(sines)
 
-def image2sound(file: str, path: list) -> tuple:
+def image2sound(file: str, path: list, useFile=False) -> tuple:
     image = PIL.Image.open(file)
     print("Resizing image")
     image = resize(image, SIZE)
@@ -116,9 +126,13 @@ def image2sound(file: str, path: list) -> tuple:
     pixels = getPixels(image, path)
     freqs = convertPixelsToFrequencies(pixels)
     freq = makeFreqFromFreqs(freqs)
-    print("Writing frequency to freq.wav")
-    writeFreq(freq, SAMPLERATE)
-    return freq
+    if useFile:
+        print("Writing frequency to freq.wav")
+        writeFreq(freq, SAMPLERATE)
+    else:
+        print("Combining frequencies together and returning")
+    sines = list(makeSine(freq, SAMPLERATE, LENGTH))
+    return np.array(sines)    
 
 def remakePath():
     if not os.path.exists("image2sound") or os.path.isfile("image2sound"):
@@ -143,6 +157,6 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit("Expected filename but got nothing")
     if sys.argv[1].endswith(".mp4"):
-        video2sound(sys.argv[1], path)
+        video2sound(sys.argv[1], path, useFile=True)
     else:
-        image2sound(sys.argv[1], path)
+        image2sound(sys.argv[1], path, useFile=True)
