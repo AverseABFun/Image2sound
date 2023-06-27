@@ -10,6 +10,7 @@ import numpy as np
 import moviepy
 import moviepy.editor
 import moviepy.video.fx.resize
+import threading
 
 SIZE = 256  # The size used in pixels
 SAMPLERATE = 44100 # The sample rate used in the output audio
@@ -78,7 +79,7 @@ def makeSine(freq: tuple, samplerate: int, length: int) -> np.array:
     return data.astype(np.int16)
 
 def writeFreq(freq: tuple, samplerate: int) -> None:
-    write("freq.wav", samplerate, makeSine(freq,samplerate))
+    write("freq.wav", samplerate, makeSine(freq,samplerate,LENGTH))
 
 def writeFreqs(freqs: list, samplerate: int) -> None:
     sines = []
@@ -93,12 +94,16 @@ def video2sound(file: str, path: list) -> list:
     print(f"Getting images from video after converting video to {1/LENGTH} FPS")
     images = getImagesFromVideo(video)
     print("Looping through images and creating the frequencies for each")
-    freqss = []
-    for image in images:
+    def threadFunc(image):
         pixels = getPixels(image, path)
         freqs = convertPixelsToFrequencies(pixels)
         freq = makeFreqFromFreqs(freqs)
         freqss.append(freq)
+    freqss = []
+    for image in images:
+        thread = threading.Thread(target=threadFunc,args=(image))
+        thread.start()
+        thread.run()
     print("Combining frequencies together and writing to freq.wav")
     writeFreqs(freqss, SAMPLERATE)
     return freqss

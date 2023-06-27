@@ -14,6 +14,10 @@
 !test/*.webp
 !test/*.mp4
 
+# Ignore the paths created
+image2sound/
+image2sound/*.json
+
 # The replit files which aren't really neccessary
 .replit
 replit.nix
